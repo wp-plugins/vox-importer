@@ -11,6 +11,7 @@ Import posts, comments, tags, and attachments from a Vox.com blog.
 == Description ==
 
 Import posts, comments, tags, and attachments from a Vox.com blog.
+This plugin depends on the WP_Importer base class. You can download it here: http://wordpress.org/extend/plugins/class-wp-importer/
 
 == Installation ==
 

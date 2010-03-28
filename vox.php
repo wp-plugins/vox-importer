@@ -2,7 +2,7 @@
 /*
 Plugin Name: Vox Importer
 Plugin URI: http://wordpress.org/extend/plugins/vox-importer/
-Description: Import posts, comments, tags, and attachments from a Vox.com blog.
+Description: Import posts, comments, tags, and attachments from a Vox.com blog. This plugin depends on the WP_Importer base class. You can download it here: http://wordpress.org/extend/plugins/class-wp-importer/
 Author: Automattic, Brian Colinger
 Author URI: http://automattic.com/
 Version: 0.1
