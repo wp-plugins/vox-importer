@@ -5,8 +5,8 @@ Plugin URI: http://wordpress.org/extend/plugins/vox-importer/
 Description: Import posts, comments, tags, and attachments from a Vox.com blog. This plugin depends on the WP_Importer base class. You can download it here: http://wordpress.org/extend/plugins/class-wp-importer/
 Author: Automattic, Brian Colinger
 Author URI: http://automattic.com/
-Version: 0.1
-Stable tag: 0.1
+Version: 0.2
+Stable tag: 0.2
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
@@ -49,6 +49,9 @@ class Vox_Import extends WP_Importer {
 	 * @return void
 	 */
 	public function __construct() {
+		add_action( 'process_attachment', array( &$this, 'process_attachment' ), 10, 2 );
+		add_action( 'process_comments', array( &$this, 'process_comments' ), 10, 2 );
+
 		if ( isset( $_GET['import'] ) && 'vox' == $_GET['import'] ) {
 			wp_enqueue_script( 'jquery' );
 			add_action( 'admin_head', array ( &$this, 'admin_head' ) );
@@ -76,16 +79,16 @@ class Vox_Import extends WP_Importer {
 	public function import() {
 		define( 'WP_IMPORTING', true );
 		do_action( 'import_start' );
+
 		// Set time limit after import_start to avoid the 900 second limit
 		set_time_limit( 0 );
 		$this->set_page_count();
 		$this->permalinks = $this->get_imported_posts( 'vox', $this->bid );
 		$this->comments = $this->get_imported_comments();
-		$this->attachments = $this->get_vox_attachments();
+		$this->attachments = $this->get_imported_attachments();
 		$this->do_posts();
 		$this->do_comments();
 		$this->process_attachments();
-		$this->backfill_attachment_urls();
 		$this->cleanup();
 	}
 
@@ -111,7 +114,7 @@ class Vox_Import extends WP_Importer {
 	public function do_comments() {
 		// Extract comments from permalinks
 		foreach ( $this->permalinks as $permalink => $post_id ) {
-			$this->process_comments( $permalink, $post_id );
+			do_action( 'process_comments', $permalink, $post_id );
 		}
 	}
 
@@ -326,10 +329,8 @@ class Vox_Import extends WP_Importer {
 			printf( "<em>%s</em><br />\n", ' ' . sizeof( $attachments['fullsize'] ) . ' ' . __( 'images found' ) );
 
 			if ( !empty( $attachments['fullsize'] ) ) {
-				$this->process_attachment( $post, $attachments );
+				do_action( 'process_attachment', $post, $attachments );
 			}
-
-			$this->backfill_attachment_urls( $post );
 
 			unset( $post, $attachments );
 
@@ -424,6 +425,8 @@ class Vox_Import extends WP_Importer {
 				}
 			}
 		}
+
+		$this->backfill_attachment_urls( $post );
 	}
 
 	/**
@@ -542,11 +545,11 @@ class Vox_Import extends WP_Importer {
 	}
 
 	/**
-	 * Set array with Vox attachments from WordPress database
+	 * Set array with imported attachments from WordPress database
 	 *
 	 * @return array
 	 */
-	public function get_vox_attachments() {
+	public function get_imported_attachments() {
 		global $wpdb;
 
 		$hashtable = array ();
@@ -883,24 +886,20 @@ $('#start_poll').click();
 		$data = get_option( 'vox_import' );
 		if ( !is_object( $data ) )
 			die();
-
-		$imp = new Vox_Import();
-		// Vox sometimes responds slow with large attachments, increase the timeout
-		add_filter( 'http_request_timeout', array( &$imp, 'bump_request_timeout' ) );
 	
-		$imp->hostname = $imp->sanitize_hostname( $data->hostname );
-		$imp->bid = md5( $imp->hostname );
-		$imp->username = $data->username;
-		$imp->password = $data->password;
-		$imp->post_password = $data->post_password;
-		$imp->auth = false;
-		if ( !empty( $imp->username ) && !empty( $imp->password ) )
-			$imp->auth = true;
+		$this->hostname = $this->sanitize_hostname( $data->hostname );
+		$this->bid = md5( $this->hostname );
+		$this->username = $data->username;
+		$this->password = $data->password;
+		$this->post_password = $data->post_password;
+		$this->auth = false;
+		if ( !empty( $this->username ) && !empty( $this->password ) )
+			$this->auth = true;
 	
-		$imp->blog_id = $imp->set_blog( $blog_id );
-		$imp->user_id = $imp->set_user( $current_user->ID );
+		$this->blog_id = $this->set_blog( $blog_id );
+		$this->user_id = $this->set_user( $current_user->ID );
 
-		$imp->import();
+		$this->import();
 	}
 
 	public function importer_status() {
@@ -926,7 +925,7 @@ $('#start_poll').click();
 		$this->bid = md5( $this->hostname );
 		$this->permalinks = $this->get_imported_posts( 'vox', $this->bid );
 		$this->comments = $this->get_imported_comments();
-		$this->attachments = $this->get_vox_attachments();
+		$this->attachments = $this->get_imported_attachments();
 
 		$status = array();
 		$status['posts'] = count( $this->permalinks );
