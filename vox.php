@@ -712,6 +712,8 @@ var $ = jQuery.noConflict();
 $( function() {
 	var code = 0;
 	$('#import_submit').click( function() {
+		$('#import_submit').attr('value', 'Please Wait...');
+		$('#import_submit').attr('disabled', 'disabled');
 		$('#spinner').show();
 		var dataString = $('#vox_info').serialize();
 		$.ajax({
@@ -724,6 +726,9 @@ $( function() {
 			if ( '401' == code ) {
 				$('#spinner').hide();
 				$('#auth_message').html("Please check your user name and password, Vox says it's incorrect.");
+				$('#import_submit').attr('value', 'Submit');
+				$('#import_submit').removeAttr('disabled');
+
 				return false;
 			}
 		
