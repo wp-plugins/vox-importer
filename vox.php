@@ -5,19 +5,18 @@ Plugin URI: http://wordpress.org/extend/plugins/vox-importer/
 Description: Import posts, comments, tags, and attachments from a Vox.com blog. This plugin depends on the WP_Importer base class. You can download it here: http://wordpress.org/extend/plugins/class-wp-importer/
 Author: Automattic, Brian Colinger
 Author URI: http://automattic.com/
-Version: 0.2
-Stable tag: 0.2
+Version: 0.3
+Stable tag: 0.3
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
 // Load Importer API
 require_once ABSPATH . 'wp-admin/includes/import.php';
 
-// Load WP_Importer base class
-if ( !class_exists( 'WP_Importer' ) && 'vox' == $_GET['import'] ) {
-	echo "The Vox Importer plugin requires the WP_Importer base class plugin to work properly.<br />\n";
-	echo "You can download it here: <a href='http://wordpress.org/extend/plugins/class-wp-importer/'>http://wordpress.org/extend/plugins/class-wp-importer/</a><br />\n";
-	die();
+if ( !class_exists( 'WP_Importer' ) ) {
+	$class_wp_importer = ABSPATH . 'wp-admin/includes/class-wp-importer.php';
+	if ( file_exists( $class_wp_importer ) )
+		require_once $class_wp_importer;
 }
 
 /**
