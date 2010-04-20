@@ -5,8 +5,8 @@ Plugin URI: http://wordpress.org/extend/plugins/vox-importer/
 Description: Import posts, comments, tags, and attachments from a Vox.com blog. This plugin depends on the WP_Importer base class. You can download it here: http://wordpress.org/extend/plugins/class-wp-importer/
 Author: Automattic, Brian Colinger
 Author URI: http://automattic.com/
-Version: 0.3
-Stable tag: 0.3
+Version: 0.4
+Stable tag: 0.4
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
@@ -333,7 +333,7 @@ class Vox_Import extends WP_Importer {
 
 			unset( $post, $attachments );
 
-			stop_the_insanity();
+			$this->stop_the_insanity();
 		}
 	}
 
@@ -341,7 +341,7 @@ class Vox_Import extends WP_Importer {
 	 * Import and processes each attachment
 	 *
 	 * @param object $post
-	 * @param string $url
+	 * @param array $attachments
 	 * @return void
 	 */
 	public function process_attachment( $post, $attachments ) {
@@ -510,7 +510,7 @@ class Vox_Import extends WP_Importer {
 	public function extract_post_images( $post_content ) {
 		$post_content = stripslashes( $post_content );
 		$post_content = str_replace( "\n", '', $post_content );
-		$post_content = min_whitespace( $post_content );
+		$post_content = $this->min_whitespace( $post_content );
 		$image_links = array();
 		$attachments = array();
 		$attachments['url'] = array();
