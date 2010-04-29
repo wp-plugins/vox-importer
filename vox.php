@@ -57,6 +57,29 @@ class Vox_Import extends WP_Importer {
 		}
 	}
 
+	public function setup_auth() {
+		// Try stored auth data first
+		$data = get_option( 'vox_import' );
+		if ( $data ) {
+			$this->hostname = $this->sanitize_hostname( $data->hostname );
+			$this->bid = md5( $this->hostname );
+			$this->username = $data->username;
+			$this->password = $data->password;
+			$this->post_password = $data->post_password;
+		}
+
+		// Maybe we're running via CLI, try CLI args
+		if ( empty( $this->username ) || empty( $this->password ) || empty( $this->hostname ) || empty( $this->bid ) ) {
+			$this->hostname = get_cli_args( 'hostname', true );
+			$this->bid = md5( $this->hostname );
+			$this->username = get_cli_args( 'username' );
+			$this->password = get_cli_args( 'password' );
+			$this->post_password = get_cli_args( 'postpassword' );
+			if ( !empty( $this->username ) && !empty( $this->password ) )
+				$this->auth = true;
+		}
+	}
+
 	/**
 	 * Strip out protocol, check for proper domain.
 	 *
@@ -179,11 +202,20 @@ class Vox_Import extends WP_Importer {
 	 * Extract XML from URL, find and import comments
 	 *
 	 * @param string $url
-	 * @return array
+	 * @return void
 	 */
 	public function process_comments( $url, $post_id ) {
+		$this->setup_auth();
+
 		if ( $this->auth )
 			$url = add_query_arg( 'auth', 'basic', $url );
+
+		// Get Vox privacy setting for this post, transition post_status if different
+		$post = get_post( $post_id );
+		$post_status = $this->get_post_status( $body );
+		if ( $post_status !==  $post->post_status )
+			wp_transition_post_status( $post_status, $post->post_status, $post );
+		unset( $post, $post_status );
 
 		echo "<em>Checking post_id $post_id for comments...</em>";
 
@@ -249,14 +281,33 @@ class Vox_Import extends WP_Importer {
 				$comment_content = addslashes( trim( strip_tags( $comment ) ) );
 				$comment = compact( 'comment_post_ID', 'comment_author', 'comment_author_url', 'comment_date', 'comment_content' );
 				$comment = wp_filter_comment( $comment );
-				$comment_id = (int) wp_insert_comment( $comment );
 
+				if ( !comment_exists( $comment['comment_author'], $comment['comment_date'] ) ) {
+					$comment_id = (int) wp_insert_comment( $comment );
 				$meta_key = 'vox_' . $this->bid . '_comment_id';
 				add_comment_meta( $comment_id, $meta_key, $vox_comment_id, true );
 			}
 		}
+		}
+	}
 
-		return $comments;
+	/**
+	 * Search for privacy settings strings
+	 *
+	 * @param string $body
+	 * @return string
+	 */
+	public function get_post_status( $body ) {
+		$post_status = 'private';
+		if ( stripos( $body, 'Viewable by neighborhood' ) )
+			$post_status = 'private';
+		if ( stripos( $body, 'Viewable by you' ) )
+			$post_status = 'private';
+		if ( stripos( $body, 'Viewable by anyone' ) )
+			$post_status = 'public';
+
+		unset( $body );
+		return $post_status;
 	}
 
 	/**
