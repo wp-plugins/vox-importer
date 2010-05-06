@@ -5,8 +5,8 @@ Plugin URI: http://wordpress.org/extend/plugins/vox-importer/
 Description: Import posts, comments, tags, and attachments from a Vox.com blog. This plugin depends on the WP_Importer base class. You can download it here: http://wordpress.org/extend/plugins/class-wp-importer/
 Author: Automattic, Brian Colinger
 Author URI: http://automattic.com/
-Version: 0.4.1
-Stable tag: 0.4.1
+Version: 0.5
+Stable tag: 0.5
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
@@ -27,27 +27,27 @@ if ( !class_exists( 'WP_Importer' ) ) {
  */
 if ( class_exists( 'WP_Importer' ) ) {
 class Vox_Import extends WP_Importer {
-	public $blog_id = 0;
-	public $user_id = 0;
-	public $hostname;
-	public $auth = false;
-	public $username = '';
-	public $password = '';
-	public $post_password = '';
-	public $bid = '';
-	public $start_page = 0;
-	public $total_pages = 0;
-	public $permalinks = array();
-	public $comments = array();
-	public $attachments = array();
-	public $url_remap = array();
+	var $blog_id = 0;
+	var $user_id = 0;
+	var $hostname;
+	var $auth = false;
+	var $username = '';
+	var $password = '';
+	var $post_password = '';
+	var $bid = '';
+	var $start_page = 0;
+	var $total_pages = 0;
+	var $permalinks = array();
+	var $comments = array();
+	var $attachments = array();
+	var $url_remap = array();
 
 	/**
 	 * Constructor
 	 *
 	 * @return void
 	 */
-	public function __construct() {
+	function __construct() {
 		add_action( 'process_attachment', array( &$this, 'process_attachment' ), 10, 2 );
 		add_action( 'process_comments', array( &$this, 'process_comments' ), 10, 2 );
 
@@ -57,7 +57,16 @@ class Vox_Import extends WP_Importer {
 		}
 	}
 
-	public function setup_auth() {
+	/**
+	 * PHP 4 Constructor
+	 *
+	 * @return void
+	 */
+	function Vox_Import(){
+		$this->__construct();
+	}
+
+	function setup_auth() {
 		// Try stored auth data first
 		$data = get_option( 'vox_import' );
 		if ( $data ) {
@@ -86,7 +95,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $hostname
 	 * @return string
 	 */
-	public function sanitize_hostname( $hostname ) {
+	function sanitize_hostname( $hostname ) {
 		$hostname = str_replace( array( 'http://', 'https://' ), '', trim( stripslashes( strtolower( $hostname ) ) ) );
 		if ( !strstr( $hostname, '.vox.com' ) )
 			$hostname = $hostname . '.vox.com';
@@ -98,7 +107,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function import() {
+	function import() {
 		define( 'WP_IMPORTING', true );
 		do_action( 'import_start' );
 
@@ -119,7 +128,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function do_posts() {
+	function do_posts() {
 		for ( $i = $this->start_page; $i <= $this->total_pages; $i++ ) {
 			$url = 'http://' . $this->hostname . '/library/posts/page/' . $i . '/atom-full.xml';
 			if ( $this->auth )
@@ -133,7 +142,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function do_comments() {
+	function do_comments() {
 		// Extract comments from permalinks
 		foreach ( $this->permalinks as $permalink => $post_id ) {
 			do_action( 'process_comments', $permalink, $post_id );
@@ -146,7 +155,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $url
 	 * @return void
 	 */
-	public function process_posts( $url ) {
+	function process_posts( $url ) {
 		$data = $this->get_page( $url, $this->username, $this->password );
 		if ( is_wp_error( $data ) ) {
 			echo "Error:\n" . $data->get_error_message() . "\n";
@@ -204,7 +213,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $url
 	 * @return void
 	 */
-	public function process_comments( $url, $post_id ) {
+	function process_comments( $url, $post_id ) {
 		$this->setup_auth();
 
 		if ( $this->auth )
@@ -297,7 +306,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $body
 	 * @return string
 	 */
-	public function get_post_status( $body ) {
+	function get_post_status( $body ) {
 		$post_status = 'private';
 		if ( stripos( $body, 'Viewable by neighborhood' ) )
 			$post_status = 'private';
@@ -317,7 +326,7 @@ class Vox_Import extends WP_Importer {
 	 * @param array $tags
 	 * @return void
 	 */
-	public function add_post_tags( $post_id, $tags ) {
+	function add_post_tags( $post_id, $tags ) {
 		if ( empty( $tags ) )
 			return;
 		global $wpdb;
@@ -348,7 +357,7 @@ class Vox_Import extends WP_Importer {
 	 * @param object $entry
 	 * @return array
 	 */
-	public function get_tags( $entry ) {
+	function get_tags( $entry ) {
 		$tags = array();
 		if ( isset( $entry->category ) ) {
 			foreach ( $entry->category as $category ) {
@@ -365,7 +374,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function process_attachments() {
+	function process_attachments() {
 		if ( empty( $this->permalinks ) )
 			return;
 
@@ -395,7 +404,7 @@ class Vox_Import extends WP_Importer {
 	 * @param array $attachments
 	 * @return void
 	 */
-	public function process_attachment( $post, $attachments ) {
+	function process_attachment( $post, $attachments ) {
 		// Process attachments
 		if ( !empty( $attachments['fullsize'] ) ) {
 			foreach ( $attachments['fullsize'] as $id => $url ) {
@@ -484,7 +493,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function backfill_attachment_urls( $post = false ) {
+	function backfill_attachment_urls( $post = false ) {
 		if ( false === $post )
 			return;
 
@@ -509,7 +518,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $url
 	 * @return array
 	 */
-	public function fetch_remote_file( $post, $url ) {
+	function fetch_remote_file( $post, $url ) {
 		// Increase the timeout
 		add_filter( 'http_request_timeout', array( &$this, 'bump_request_timeout' ) );
 
@@ -558,7 +567,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $post_content
 	 * @return array
 	 */
-	public function extract_post_images( $post_content ) {
+	function extract_post_images( $post_content ) {
 		$post_content = stripslashes( $post_content );
 		$post_content = str_replace( "\n", '', $post_content );
 		$post_content = $this->min_whitespace( $post_content );
@@ -599,7 +608,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return array
 	 */
-	public function get_imported_attachments() {
+	function get_imported_attachments() {
 		global $wpdb;
 
 		$hashtable = array ();
@@ -626,7 +635,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return array
 	 */
-	public function get_imported_comments() {
+	function get_imported_comments() {
 		global $wpdb;
 
 		$hashtable = array ();
@@ -659,7 +668,7 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function set_page_count() {
+	function set_page_count() {
 		$url = 'http://' . $this->hostname . '/library/posts/page/1/atom-full.xml';
 		if ( $this->auth )
 			$url = add_query_arg( 'auth', 'basic', $url );
@@ -692,7 +701,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $url
 	 * @return int
 	 */
-	public function get_page_number( $url ) {
+	function get_page_number( $url ) {
 		$path = parse_url( $url, PHP_URL_PATH );
 		$parts = explode( '/', $path );
 		$pos = ( sizeof( $parts ) - 2 );
@@ -711,7 +720,7 @@ class Vox_Import extends WP_Importer {
 	 * @param string $rel
 	 * @return mixed
 	 */
-	public function get_link_by_rel( $links, $rel ) {
+	function get_link_by_rel( $links, $rel ) {
 		foreach ( $links as $link ) {
 			$attr = $link->attributes();
 			$_rel = (string) $attr['rel'];
@@ -730,13 +739,13 @@ class Vox_Import extends WP_Importer {
 	 *
 	 * @return void
 	 */
-	public function cleanup() {
+	function cleanup() {
 		delete_option( 'vox_import' );
 		do_action( 'import_done', 'vox' );
 		printf ( "<strong>%s</strong><br />\n", __( 'All Done!' ) );
 	}
 
-	public function admin_head() {
+	function admin_head() {
 		?>
 <style type="text/css">
 #vox_info label {
@@ -860,17 +869,17 @@ $('#start_poll').click();
 <?php
 	}
 
-	public function print_header() {
+	function print_header() {
 		echo "<div class='wrap'>\n";
 		screen_icon();
 		echo "<h2>" . __( 'Import Vox' ) . "</h2>\n";
 	}
 
-	public function print_footer() {
+	function print_footer() {
 		echo "</div>\n";
 	}
 
-	public function test_user_pass( $hostname, $username, $password ) {
+	function test_user_pass( $hostname, $username, $password ) {
 		$hostname = $this->sanitize_hostname( $hostname );
 		$username = strtolower( $username );
 
@@ -890,7 +899,7 @@ $('#start_poll').click();
 		echo $code;
 	}
 
-	public function step_1() {
+	function step_1() {
 		$action = add_query_arg( 'step', 2, $_SERVER['REQUEST_URI'] );
 		$hostname = $this->sanitize_hostname( get_option( 'vox_hostname' ) );
 		$hostname = str_replace( '.vox.com', '', $hostname );
@@ -916,7 +925,7 @@ $('#start_poll').click();
 <?php
 	}
 
-	public function step_2() {
+	function step_2() {
 		$hostname = $this->sanitize_hostname( $_POST['hostname'] );
 		$hostname = str_replace( '.vox.com', '', $hostname );
 		update_option( 'vox_hostname', $hostname );
@@ -935,7 +944,7 @@ $('#start_poll').click();
 		echo 'ready';
 	}
 
-	public function step_3() {
+	function step_3() {
 		global $blog_id, $current_user, $current_blog;
 
 		$data = get_option( 'vox_import' );
@@ -957,7 +966,7 @@ $('#start_poll').click();
 		$this->import();
 	}
 
-	public function importer_status() {
+	function importer_status() {
 		$hostname = $this->sanitize_hostname( get_option( 'vox_hostname' ) );
 		$status = $this->get_importer_status( $hostname, 'array' );
 ?>
@@ -975,7 +984,7 @@ $('#start_poll').click();
 <?php
 	}
 
-	public function get_importer_status( $hostname, $return = 'json' ) {
+	function get_importer_status( $hostname, $return = 'json' ) {
 		$this->hostname = $this->sanitize_hostname( $hostname );
 		$this->bid = md5( $this->hostname );
 		$this->permalinks = $this->get_imported_posts( 'vox', $this->bid );
@@ -993,7 +1002,7 @@ $('#start_poll').click();
 			return $status;
 	}
 
-	public function dispatch() {
+	function dispatch() {
 		// Set step
 		$step = isset( $_GET['step'] ) ? (int) $_GET['step'] : 1;
 
@@ -1024,7 +1033,7 @@ $('#start_poll').click();
 	 * @param string $post_content
 	 * @return string
 	 */
-	public function strip_signatures( $post_content ) {
+	function strip_signatures( $post_content ) {
 		$post_content = preg_replace( '|(<p style=[\'"].*?[\'"].*?>.*?<a href=[\'"].*?[\'"].*?>Read and post comments</a>.*?</p>)|is', '', $post_content );
 		return $post_content;
 	}
