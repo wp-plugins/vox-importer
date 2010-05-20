@@ -4,7 +4,7 @@ Donate link:
 Tags: importer, vox
 Requires at least: 2.9
 Tested up to: 3.0
-Stable tag: 0.1
+Stable tag: 0.6
 
 Import posts, comments, tags, and attachments from a Vox.com blog.
 
