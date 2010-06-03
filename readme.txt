@@ -1,7 +1,7 @@
 === Plugin Name ===
 Contributors: automattic, briancolinger
 Donate link: 
-Tags: importer, vox
+Tags: importer, vox, WordPress.com
 Requires at least: 2.9
 Tested up to: 3.0
 Stable tag: 0.6
